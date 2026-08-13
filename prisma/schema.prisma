@@ -1,0 +1,291 @@
+// ==========================================================
+// Prisma schema — Age-Gap Dating Platform
+// ==========================================================
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+// ----------------------------------------------------------
+// ENUMS
+// ----------------------------------------------------------
+
+enum Role {
+  SPONSOR   // "mature" role
+  PARTNER   // "younger" role
+  ADMIN
+  MODERATOR
+}
+
+enum VerificationStatus {
+  UNVERIFIED
+  PENDING
+  VERIFIED
+  REJECTED
+}
+
+enum ProfileVisibility {
+  PUBLIC
+  STEALTH        // hidden from search, only visible to existing matches
+  INCOGNITO      // browse without appearing in others' "viewed me" lists
+}
+
+enum MatchStatus {
+  PENDING
+  MATCHED
+  DECLINED
+  BLOCKED
+}
+
+enum ReportReason {
+  UNDERAGE_SUSPECTED
+  FINANCIAL_SCAM
+  HARASSMENT
+  FAKE_PROFILE
+  INAPPROPRIATE_CONTENT
+  SOLICITATION        // commercial sex work solicitation - ToS violation
+  OTHER
+}
+
+enum ReportStatus {
+  OPEN
+  IN_REVIEW
+  ACTIONED
+  DISMISSED
+}
+
+// ----------------------------------------------------------
+// CORE USER / AUTH
+// ----------------------------------------------------------
+
+model User {
+  id                String   @id @default(cuid())
+  email             String   @unique
+  phone             String?  @unique
+  passwordHash      String
+  role              Role
+  dateOfBirth       DateTime // required at signup; used to compute/verify age >= 18
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  // Age gate + identity verification — BLOCKING, not optional
+  verificationStatus VerificationStatus @default(UNVERIFIED)
+  verificationVendorRef String?         // reference id from Persona/Veriff/Onfido
+  verifiedAt         DateTime?
+
+  isActive          Boolean  @default(true)
+  isSuspended       Boolean  @default(false)
+  suspendedReason   String?
+
+  profile           Profile?
+  preferences       Preference?
+
+  sentMatches       Match[]  @relation("InitiatedMatches")
+  receivedMatches   Match[]  @relation("ReceivedMatches")
+
+  conversationsA    Conversation[] @relation("ParticipantA")
+  conversationsB    Conversation[] @relation("ParticipantB")
+  messagesSent      Message[]
+
+  reportsFiled      Report[] @relation("ReportedBy")
+  reportsAgainst    Report[] @relation("ReportedUser")
+
+  blocksInitiated   Block[]  @relation("Blocker")
+  blocksReceived    Block[]  @relation("Blocked")
+
+  @@index([role])
+  @@index([verificationStatus])
+}
+
+// ----------------------------------------------------------
+// PROFILE
+// ----------------------------------------------------------
+
+model Profile {
+  id                String   @id @default(cuid())
+  userId            String   @unique
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  displayName       String
+  bio               String?  @db.Text
+  city              String?
+  region            String?
+  country           String?
+  latitude          Float?
+  longitude         Float?
+
+  heightCm          Int?
+  bodyType          String?
+  ethnicity         String?
+  education         String?
+  occupation        String?
+
+  // Sponsor-specific / Partner-specific optional fields
+  netWorthBand      String?  // e.g. "$500k-1M" — self-reported, sponsor-side only, optional
+  lifestyleBudget   String?  // self-reported monthly allowance band, optional
+  relationshipGoals String[] // e.g. ["travel companion","mentorship","long-term"]
+
+  visibility        ProfileVisibility @default(PUBLIC)
+  isComplete        Boolean  @default(false)
+
+  photos            Photo[]
+
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@index([city, region, country])
+  @@index([visibility])
+}
+
+model Photo {
+  id            String   @id @default(cuid())
+  profileId     String
+  profile       Profile  @relation(fields: [profileId], references: [id], onDelete: Cascade)
+
+  storageKey    String   // S3/R2 object key, not a public URL
+  isPrimary     Boolean  @default(false)
+  isPrivate     Boolean  @default(false)   // gated album, requires explicit grant
+  isWatermarked Boolean  @default(true)
+
+  createdAt     DateTime @default(now())
+
+  grants        PhotoAccessGrant[]
+}
+
+// Explicit permission grants for private-album photos
+model PhotoAccessGrant {
+  id          String   @id @default(cuid())
+  photoId     String
+  photo       Photo    @relation(fields: [photoId], references: [id], onDelete: Cascade)
+  grantedToId String   // userId granted access
+  grantedAt   DateTime @default(now())
+  revokedAt   DateTime?
+
+  @@unique([photoId, grantedToId])
+}
+
+// ----------------------------------------------------------
+// PREFERENCES / FILTERS
+// ----------------------------------------------------------
+
+model Preference {
+  id                String   @id @default(cuid())
+  userId            String   @unique
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  minAge            Int      @default(18)
+  maxAge            Int      @default(99)
+  maxDistanceKm     Int      @default(100)
+  genderPreference  String[]
+  mustBeVerified    Boolean  @default(true)
+  dealBreakers      String[] // e.g. ["smoker","no photo"]
+
+  updatedAt         DateTime @updatedAt
+}
+
+// ----------------------------------------------------------
+// MATCHING
+// ----------------------------------------------------------
+
+model Match {
+  id            String      @id @default(cuid())
+  initiatorId   String
+  initiator     User        @relation("InitiatedMatches", fields: [initiatorId], references: [id])
+  recipientId   String
+  recipient     User        @relation("ReceivedMatches", fields: [recipientId], references: [id])
+
+  status        MatchStatus @default(PENDING)
+  createdAt     DateTime    @default(now())
+  respondedAt   DateTime?
+
+  conversation  Conversation?
+
+  @@unique([initiatorId, recipientId])
+  @@index([status])
+}
+
+// ----------------------------------------------------------
+// MESSAGING
+// ----------------------------------------------------------
+
+model Conversation {
+  id            String   @id @default(cuid())
+  matchId       String   @unique
+  match         Match    @relation(fields: [matchId], references: [id])
+
+  participantAId String
+  participantA   User    @relation("ParticipantA", fields: [participantAId], references: [id])
+  participantBId String
+  participantB   User    @relation("ParticipantB", fields: [participantBId], references: [id])
+
+  createdAt     DateTime @default(now())
+  lastMessageAt DateTime?
+  isArchived    Boolean  @default(false)
+
+  messages      Message[]
+}
+
+model Message {
+  id              String   @id @default(cuid())
+  conversationId  String
+  conversation    Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  senderId        String
+  sender          User     @relation(fields: [senderId], references: [id])
+
+  body            String?  @db.Text
+  mediaKey        String?  // storage key for attached image/video, if any
+  mediaType       String?  // "image" | "video" | null
+
+  // Lightweight automated scam-pattern flagging (see moderation service)
+  flaggedForReview Boolean @default(false)
+  flagReason       String?
+
+  createdAt       DateTime @default(now())
+  readAt          DateTime?
+  deletedAt       DateTime?
+
+  @@index([conversationId, createdAt])
+}
+
+// ----------------------------------------------------------
+// TRUST & SAFETY
+// ----------------------------------------------------------
+
+model Report {
+  id              String       @id @default(cuid())
+  reportedById    String
+  reportedBy      User         @relation("ReportedBy", fields: [reportedById], references: [id])
+  reportedUserId  String
+  reportedUser    User         @relation("ReportedUser", fields: [reportedUserId], references: [id])
+
+  reason          ReportReason
+  details         String?      @db.Text
+  evidenceKeys    String[]     // storage keys for screenshots etc.
+
+  status          ReportStatus @default(OPEN)
+  reviewedById    String?
+  reviewNotes     String?      @db.Text
+
+  createdAt       DateTime     @default(now())
+  resolvedAt      DateTime?
+
+  @@index([status])
+  @@index([reportedUserId])
+}
+
+model Block {
+  id          String   @id @default(cuid())
+  blockerId   String
+  blocker     User     @relation("Blocker", fields: [blockerId], references: [id])
+  blockedId   String
+  blocked     User     @relation("Blocked", fields: [blockedId], references: [id])
+  createdAt   DateTime @default(now())
+
+  @@unique([blockerId, blockedId])
+}

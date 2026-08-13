@@ -1,0 +1,13 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --ink: #12151a;
+  --gold: #b8935a;
+}
+
+body {
+  background: var(--ink);
+  color: #edeae2;
+}
