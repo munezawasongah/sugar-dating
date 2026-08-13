@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useRef } from "react";
 import TopNav from "@/components/TopNav";
+import Footer from "@/components/Footer";
 
 interface ConversationSummary {
   id: string;
@@ -70,6 +71,7 @@ export default function MessagesPage() {
   const activeConvo = conversations.find((c) => c.id === activeId);
 
   return (
+    <>
     <main className="w-full px-8 md:px-16">
       <TopNav />
       <h1 className="font-display text-2xl mb-6">Messages</h1>
@@ -152,5 +154,7 @@ export default function MessagesPage() {
         </div>
       )}
     </main>
+    <Footer />
+    </>
   );
 }

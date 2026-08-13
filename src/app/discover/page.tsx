@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import TopNav from "@/components/TopNav";
+import Footer from "@/components/Footer";
 
 interface Candidate {
   id: string;
@@ -12,6 +13,7 @@ interface Candidate {
     country: string | null;
     relationshipGoals: string[];
     visibility: string;
+    avatarDataUrl?: string | null;
   } | null;
 }
 
@@ -59,6 +61,7 @@ export default function DiscoverPage() {
   }
 
   return (
+    <>
     <main className="w-full px-8 md:px-16">
       <TopNav />
 
@@ -85,8 +88,16 @@ export default function DiscoverPage() {
             <div key={c.id} className="rounded-2xl overflow-hidden border" style={{ background: "#1B2027", borderColor: "#2E3640" }}>
               <div
                 className="h-56 relative flex items-end p-3"
-                style={{ background: "linear-gradient(150deg, #2b3542, #161a20)" }}
+                style={{ background: c.profile?.avatarDataUrl ? undefined : "linear-gradient(150deg, #2b3542, #161a20)" }}
               >
+                {c.profile?.avatarDataUrl && (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={c.profile.avatarDataUrl}
+                    alt={c.profile?.displayName ?? "Profile photo"}
+                    className="absolute inset-0 w-full h-full object-cover"
+                  />
+                )}
                 {c.profile?.visibility === "INCOGNITO" && (
                   <span className="absolute top-3 left-3 text-[10px] uppercase tracking-wide px-2 py-1 rounded-full" style={{ background: "rgba(18,21,26,0.75)", border: "1px solid #2E3640", color: "#8B93A0" }}>
                     Incognito
@@ -131,5 +142,7 @@ export default function DiscoverPage() {
           ))}
       </div>
     </main>
+    <Footer />
+    </>
   );
 }

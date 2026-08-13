@@ -130,6 +130,8 @@ model Profile {
   lifestyleBudget   String?  // self-reported monthly allowance band, optional
   relationshipGoals String[] // e.g. ["travel companion","mentorship","long-term"]
 
+  avatarDataUrl     String?  @db.Text // base64 data URI for now; swap to storageKey once S3/R2 is wired up
+
   visibility        ProfileVisibility @default(PUBLIC)
   isComplete        Boolean  @default(false)
 

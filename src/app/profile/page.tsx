@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import TopNav from "@/components/TopNav";
+import Footer from "@/components/Footer";
 
 export default function ProfilePage() {
   const [me, setMe] = useState<any>(null);
@@ -12,6 +13,10 @@ export default function ProfilePage() {
   const [goals, setGoals] = useState("");
   const [visibility, setVisibility] = useState("PUBLIC");
   const [saved, setSaved] = useState(false);
+  const [avatarDataUrl, setAvatarDataUrl] = useState<string | null>(null);
+  const [avatarError, setAvatarError] = useState<string | null>(null);
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     fetch("/api/me")
@@ -25,9 +30,57 @@ export default function ProfilePage() {
           setCountry(data.profile.country ?? "");
           setGoals((data.profile.relationshipGoals ?? []).join(", "));
           setVisibility(data.profile.visibility ?? "PUBLIC");
+          setAvatarDataUrl(data.profile.avatarDataUrl ?? null);
         }
       });
   }, []);
+
+  async function handleAvatarSelect(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setAvatarError(null);
+
+    if (!file.type.startsWith("image/")) {
+      setAvatarError("Please choose an image file.");
+      return;
+    }
+    if (file.size > 2 * 1024 * 1024) {
+      setAvatarError("Image is too large — please use one under 2MB.");
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = async () => {
+      const dataUrl = reader.result as string;
+      setUploadingAvatar(true);
+      try {
+        const res = await fetch("/api/profile/avatar", {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ dataUrl }),
+        });
+        const data = await res.json();
+        if (!res.ok) {
+          setAvatarError(data.error || "Upload failed.");
+          return;
+        }
+        setAvatarDataUrl(data.avatarDataUrl);
+      } finally {
+        setUploadingAvatar(false);
+      }
+    };
+    reader.readAsDataURL(file);
+  }
+
+  async function removeAvatar() {
+    setUploadingAvatar(true);
+    try {
+      await fetch("/api/profile/avatar", { method: "DELETE" });
+      setAvatarDataUrl(null);
+    } finally {
+      setUploadingAvatar(false);
+    }
+  }
 
   async function save() {
     setSaved(false);
@@ -47,6 +100,7 @@ export default function ProfilePage() {
   }
 
   return (
+    <>
     <main className="w-full px-8 md:px-16">
       <TopNav />
       <div className="max-w-3xl">
@@ -64,6 +118,54 @@ export default function ProfilePage() {
           {me.verificationStatus === "VERIFIED" ? "✓ ID verified" : `Verification: ${me.verificationStatus?.toLowerCase()}`}
         </div>
       )}
+
+      <div className="flex items-center gap-5 mb-8">
+        <div
+          className="w-24 h-24 rounded-full overflow-hidden flex-shrink-0"
+          style={{
+            background: avatarDataUrl ? undefined : "linear-gradient(150deg, #2b3542, #161a20)",
+            border: "1px solid #2E3640",
+          }}
+        >
+          {avatarDataUrl && (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={avatarDataUrl} alt="Profile picture" className="w-full h-full object-cover" />
+          )}
+        </div>
+        <div>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*"
+            onChange={handleAvatarSelect}
+            className="hidden"
+          />
+          <div className="flex gap-2">
+            <button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              disabled={uploadingAvatar}
+              className="text-xs px-4 py-2 rounded-lg font-semibold"
+              style={{ background: "#B8935A", color: "#12151A" }}
+            >
+              {uploadingAvatar ? "Uploading…" : avatarDataUrl ? "Change photo" : "Upload photo"}
+            </button>
+            {avatarDataUrl && (
+              <button
+                type="button"
+                onClick={removeAvatar}
+                disabled={uploadingAvatar}
+                className="text-xs px-4 py-2 rounded-lg"
+                style={{ border: "1px solid #2E3640", color: "#8B93A0" }}
+              >
+                Remove
+              </button>
+            )}
+          </div>
+          <p className="text-xs mt-2" style={{ color: "#8B93A0" }}>JPG or PNG, under 2MB.</p>
+          {avatarError && <p className="text-xs mt-1" style={{ color: "#B4756B" }}>{avatarError}</p>}
+        </div>
+      </div>
 
       <div className="space-y-5">
         <div>
@@ -146,5 +248,7 @@ export default function ProfilePage() {
       </div>
       </div>
     </main>
+    <Footer />
+    </>
   );
 }
