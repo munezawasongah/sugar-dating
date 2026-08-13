@@ -8,6 +8,7 @@ import bcrypt from "bcryptjs";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { startVerificationSession } from "@/lib/verification";
+import { signSession } from "@/lib/auth";
 
 const signupSchema = z.object({
   email: z.string().email(),
@@ -63,14 +64,33 @@ export async function POST(req: NextRequest) {
 
   // Kick off ID verification session with third-party KYC vendor (Persona/Veriff/Onfido).
   // Profile stays non-discoverable until this resolves to VERIFIED via webhook.
-  const verificationSession = await startVerificationSession(user.id);
+  // NOTE: if KYC_VENDOR_API_KEY isn't configured yet (e.g. early development),
+  // this is skipped gracefully so the rest of signup/login still works.
+  let verificationSessionUrl: string | null = null;
+  if (process.env.KYC_VENDOR_API_KEY) {
+    try {
+      const verificationSession = await startVerificationSession(user.id);
+      verificationSessionUrl = verificationSession.redirectUrl;
+    } catch (err) {
+      console.error("KYC session creation failed:", err);
+    }
+  }
 
-  return NextResponse.json(
+  const token = signSession(user.id);
+  const res = NextResponse.json(
     {
       userId: user.id,
       nextStep: "ID_VERIFICATION",
-      verificationSessionUrl: verificationSession.redirectUrl,
+      verificationSessionUrl,
     },
     { status: 201 }
   );
+  res.cookies.set("session_token", token, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "lax",
+    path: "/",
+    maxAge: 60 * 60 * 24 * 30,
+  });
+  return res;
 }
