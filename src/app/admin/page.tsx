@@ -79,7 +79,8 @@ export default function AdminPage() {
   const others = reports.filter((r) => r.reason !== "UNDERAGE_SUSPECTED");
 
   return (
-    <main className="max-w-4xl mx-auto px-6 py-10">
+    <main className="w-full px-8 md:px-16 py-10">
+      <div className="max-w-4xl">
       <h1 className="font-display text-2xl mb-8">Admin — Trust & Safety</h1>
 
       {underage.length > 0 && (
@@ -167,6 +168,7 @@ export default function AdminPage() {
           ))}
         </div>
       </section>
+      </div>
     </main>
   );
 }

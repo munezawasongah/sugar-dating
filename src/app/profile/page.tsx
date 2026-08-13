@@ -47,8 +47,9 @@ export default function ProfilePage() {
   }
 
   return (
-    <main className="max-w-3xl mx-auto px-6">
+    <main className="w-full px-8 md:px-16">
       <TopNav />
+      <div className="max-w-3xl">
       <h1 className="font-display text-2xl mb-2">Your Profile</h1>
 
       {me && (
@@ -142,6 +143,7 @@ export default function ProfilePage() {
           Save profile
         </button>
         {saved && <span className="ml-3 text-sm" style={{ color: "#7C9583" }}>Saved.</span>}
+      </div>
       </div>
     </main>
   );

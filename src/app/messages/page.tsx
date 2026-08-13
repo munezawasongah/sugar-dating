@@ -70,7 +70,7 @@ export default function MessagesPage() {
   const activeConvo = conversations.find((c) => c.id === activeId);
 
   return (
-    <main className="max-w-6xl mx-auto px-6">
+    <main className="w-full px-8 md:px-16">
       <TopNav />
       <h1 className="font-display text-2xl mb-6">Messages</h1>
 

@@ -7,6 +7,13 @@
   --gold: #b8935a;
 }
 
+html, body {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  min-height: 100vh;
+}
+
 body {
   background: var(--ink);
   color: #edeae2;
