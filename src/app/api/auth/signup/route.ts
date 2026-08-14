@@ -77,6 +77,18 @@ export async function POST(req: NextRequest) {
     },
   });
 
+  // Create a basic profile immediately so the member is browsable in
+  // Discover from the moment they sign up, not just after they visit the
+  // Profile page. They can fill in more detail (and pick a nicer display
+  // name) any time from Profile settings.
+  await prisma.profile.create({
+    data: {
+      userId: user.id,
+      displayName: email.split("@")[0],
+      visibility: "PUBLIC",
+    },
+  });
+
   const token = signSession(user.id);
   const res = NextResponse.json({ userId: user.id }, { status: 201 });
   res.cookies.set("session_token", token, {

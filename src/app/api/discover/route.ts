@@ -56,11 +56,11 @@ export async function GET(req: NextRequest) {
       isActive: true,
       isSuspended: false,
       dateOfBirth: { gte: minDob, lte: maxDob },
-      profile: {
-        // STEALTH profiles never appear in discovery, only direct/matched contexts
-        visibility: { in: ["PUBLIC", "INCOGNITO"] },
-        isComplete: true,
-      },
+      // STEALTH profiles never appear in discovery, only direct/matched
+      // contexts. Members who don't have a Profile row yet (haven't visited
+      // the Profile page) are still shown — everyone is browsable as soon
+      // as they sign up, not just once they fill out a profile.
+      OR: [{ profile: null }, { profile: { visibility: { in: ["PUBLIC", "INCOGNITO"] } } }],
     },
     select: {
       id: true,
