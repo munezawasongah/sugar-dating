@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import TopNav from "@/components/TopNav";
 import Footer from "@/components/Footer";
 
 interface Report {
@@ -65,8 +66,9 @@ export default function AdminPage() {
 
   if (!me || (me.role !== "ADMIN" && me.role !== "MODERATOR")) {
     return (
-      <main className="min-h-screen flex items-center justify-center px-6">
-        <div className="text-center">
+      <main className="w-full px-8 md:px-16">
+        <TopNav />
+        <div className="text-center py-16">
           <h1 className="font-display text-xl mb-2">Not authorized</h1>
           <p className="text-sm" style={{ color: "#8B93A0" }}>
             This page is only visible to admin accounts.
@@ -82,6 +84,7 @@ export default function AdminPage() {
   return (
     <>
     <main className="w-full px-8 md:px-16 py-10">
+      <TopNav />
       <div className="max-w-4xl">
       <h1 className="font-display text-2xl mb-8">Admin — Trust & Safety</h1>
 
