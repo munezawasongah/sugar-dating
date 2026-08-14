@@ -27,7 +27,7 @@ export default function TopNav() {
   return (
     <header className="flex items-center justify-between py-6 border-b mb-10" style={{ borderColor: "#2E3640" }}>
       <div className="flex items-center gap-3">
-        <BackButton fallbackHref="/discover" />
+        {pathname !== "/discover" && <BackButton fallbackHref="/discover" />}
         <Link href="/discover" className="flex items-center gap-2">
           <svg width="26" height="26" viewBox="0 0 40 40" fill="none">
             <circle cx="20" cy="20" r="19" stroke="#B8935A" strokeWidth="1.2" />
