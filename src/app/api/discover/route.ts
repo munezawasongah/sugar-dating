@@ -1,7 +1,11 @@
 // GET /api/discover
-// Returns candidate profiles for the current user based on their Preference row.
+// Returns candidate profiles for the current user to browse. Browsing is
+// open to every member regardless of role — a Sponsor can see other
+// Sponsors as well as Partners, and vice versa. Contacting someone (via
+// /api/matches) is a separate, gated action: normal members need to have
+// paid the one-off fee, and can never contact premium members.
 // Enforces: only VERIFIED users are discoverable, visibility rules respected,
-// blocked users excluded in both directions, already-matched users excluded.
+// blocked users excluded in both directions.
 
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
@@ -29,7 +33,6 @@ export async function GET(req: NextRequest) {
   const canSeePhone = me.role === "ADMIN" || me.isPremium;
 
   const prefs = me.preferences;
-  const oppositeRole = me.role === "SPONSOR" ? "PARTNER" : "SPONSOR";
 
   const [blockedByMe, blockingMe] = await Promise.all([
     prisma.block.findMany({ where: { blockerId: userId }, select: { blockedId: true } }),
@@ -48,7 +51,7 @@ export async function GET(req: NextRequest) {
   const candidates = await prisma.user.findMany({
     where: {
       id: { notIn: Array.from(excludedIds) },
-      role: oppositeRole,
+      role: { in: ["SPONSOR", "PARTNER"] }, // browse everyone; excludes admin/moderator accounts from the feed
       verificationStatus: "VERIFIED",
       isActive: true,
       isSuspended: false,
@@ -61,6 +64,7 @@ export async function GET(req: NextRequest) {
     },
     select: {
       id: true,
+      role: true,
       dateOfBirth: true,
       isPremium: true,
       phone: canSeePhone,
@@ -70,7 +74,7 @@ export async function GET(req: NextRequest) {
         },
       },
     },
-    take: 30,
+    take: 60,
   });
 
   return NextResponse.json({ candidates });

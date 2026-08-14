@@ -7,6 +7,7 @@ import PaywallModal from "@/components/PaywallModal";
 
 interface Candidate {
   id: string;
+  role: "SPONSOR" | "PARTNER";
   dateOfBirth: string;
   isPremium?: boolean;
   phone?: string | null;
@@ -156,8 +157,10 @@ export default function DiscoverPage() {
                   <span className="font-display text-base">{c.profile?.displayName ?? "Member"}</span>
                   <span className="text-sm" style={{ color: "#8B93A0" }}>{calcAge(c.dateOfBirth)}</span>
                 </div>
-                <div className="text-xs mb-3" style={{ color: "#8B93A0" }}>
-                  {[c.profile?.city, c.profile?.country].filter(Boolean).join(", ") || "Location private"}
+                <div className="text-xs mb-3 flex items-center gap-2" style={{ color: "#8B93A0" }}>
+                  <span style={{ color: "#7C9583" }}>{c.role === "SPONSOR" ? "Sponsor" : "Partner"}</span>
+                  <span>·</span>
+                  <span>{[c.profile?.city, c.profile?.country].filter(Boolean).join(", ") || "Location private"}</span>
                 </div>
                 <div className="flex flex-wrap gap-1.5">
                   {(c.profile?.relationshipGoals ?? []).slice(0, 2).map((g) => (
