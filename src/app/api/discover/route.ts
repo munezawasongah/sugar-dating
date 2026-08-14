@@ -18,13 +18,15 @@ export async function GET(req: NextRequest) {
   if (!me) return NextResponse.json({ error: "User not found" }, { status: 404 });
 
   // Users must complete their own verification before browsing others —
-  // reduces unverified accounts scraping/farming profiles.
-  if (me.verificationStatus !== "VERIFIED") {
+  // reduces unverified accounts scraping/farming profiles. Admins bypass this.
+  if (me.role !== "ADMIN" && me.verificationStatus !== "VERIFIED") {
     return NextResponse.json(
       { error: "Complete ID verification to browse profiles." },
       { status: 403 }
     );
   }
+
+  const canSeePhone = me.role === "ADMIN" || me.isPremium;
 
   const prefs = me.preferences;
   const oppositeRole = me.role === "SPONSOR" ? "PARTNER" : "SPONSOR";
@@ -57,7 +59,11 @@ export async function GET(req: NextRequest) {
         isComplete: true,
       },
     },
-    include: {
+    select: {
+      id: true,
+      dateOfBirth: true,
+      isPremium: true,
+      phone: canSeePhone,
       profile: {
         include: {
           photos: { where: { isPrivate: false }, take: 3 },

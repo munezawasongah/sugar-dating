@@ -15,6 +15,7 @@ const signupSchema = z.object({
   password: z.string().min(10),
   role: z.enum(["SPONSOR", "PARTNER"]),
   dateOfBirth: z.coerce.date(),
+  phone: z.string().min(9), // used for WhatsApp direct-message and M-Pesa payments
 });
 
 function calculateAge(dob: Date): number {
@@ -33,7 +34,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
   }
 
-  const { email, password, role, dateOfBirth } = parsed.data;
+  const { email, password, role, dateOfBirth, phone } = parsed.data;
 
   // --- Hard age gate ---
   const age = calculateAge(dateOfBirth);
@@ -50,6 +51,11 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Email already registered." }, { status: 409 });
   }
 
+  const existingPhone = await prisma.user.findUnique({ where: { phone } });
+  if (existingPhone) {
+    return NextResponse.json({ error: "Phone number already registered." }, { status: 409 });
+  }
+
   const passwordHash = await bcrypt.hash(password, 12);
 
   const user = await prisma.user.create({
@@ -58,6 +64,7 @@ export async function POST(req: NextRequest) {
       passwordHash,
       role,
       dateOfBirth,
+      phone,
       verificationStatus: "UNVERIFIED",
     },
   });

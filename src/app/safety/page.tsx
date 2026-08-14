@@ -50,12 +50,6 @@ export default function SafetyPage() {
           you can revoke access at any time.
         </p>
       </section>
-
-      <p className="text-xs pt-6" style={{ color: "#8B93A0" }}>
-        This page describes safety features and general guidance — it isn't a substitute for your
-        own judgment. If you ever feel unsafe, trust that instinct and remove yourself from the
-        situation.
-      </p>
     </LegalLayout>
   );
 }

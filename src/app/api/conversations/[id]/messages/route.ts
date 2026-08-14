@@ -15,6 +15,15 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
   const messages = await prisma.message.findMany({
     where: { conversationId: params.id, deletedAt: null },
     orderBy: { createdAt: "asc" },
+    select: {
+      id: true,
+      senderId: true,
+      body: true,
+      mediaKey: true,
+      mediaType: true,
+      flaggedForReview: true,
+      createdAt: true,
+    },
   });
 
   return NextResponse.json({ messages });

@@ -52,6 +52,12 @@ enum ReportReason {
   OTHER
 }
 
+enum PaymentStatus {
+  PENDING
+  COMPLETED
+  FAILED
+}
+
 enum ReportStatus {
   OPEN
   IN_REVIEW
@@ -81,6 +87,17 @@ model User {
   isActive          Boolean  @default(true)
   isSuspended       Boolean  @default(false)
   suspendedReason   String?
+
+  // Premium members can message anyone and start WhatsApp chats with no fee.
+  // Admins bypass every restriction in this file regardless of these flags.
+  isPremium         Boolean  @default(false)
+
+  // Non-premium members must pay a one-off contact fee before they can
+  // initiate a conversation with anyone.
+  hasPaidContactFee Boolean  @default(false)
+  contactFeePaidAt  DateTime?
+
+  paymentIntents    PaymentIntent[]
 
   profile           Profile?
   preferences       Preference?
@@ -290,4 +307,27 @@ model Block {
   createdAt   DateTime @default(now())
 
   @@unique([blockerId, blockedId])
+}
+
+// ----------------------------------------------------------
+// PAYMENTS
+// ----------------------------------------------------------
+
+// Tracks the one-off KES 2,000 contact-fee payment that non-premium members
+// must complete before they can start conversations with anyone.
+model PaymentIntent {
+  id            String        @id @default(cuid())
+  userId        String
+  user          User          @relation(fields: [userId], references: [id])
+
+  amountKes     Int           @default(2000)
+  phone         String
+  status        PaymentStatus @default(PENDING)
+  providerRef   String?       // M-Pesa Daraja CheckoutRequestID, once real payments are wired up
+
+  createdAt     DateTime      @default(now())
+  completedAt   DateTime?
+
+  @@index([userId])
+  @@index([status])
 }

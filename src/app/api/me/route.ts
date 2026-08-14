@@ -15,8 +15,12 @@ export async function GET(req: NextRequest) {
   return NextResponse.json({
     id: user.id,
     email: user.email,
+    phone: user.phone,
     role: user.role,
     verificationStatus: user.verificationStatus,
+    isPremium: user.isPremium,
+    hasPaidContactFee: user.hasPaidContactFee,
+    canContactFreely: user.role === "ADMIN" || user.isPremium || user.hasPaidContactFee,
     profile: user.profile,
   });
 }

@@ -58,13 +58,6 @@ export default function TermsPage() {
           take effect constitutes acceptance of the updated terms.
         </p>
       </section>
-
-      <p className="text-xs pt-6" style={{ color: "#8B93A0" }}>
-        This is a draft and has not yet been reviewed by a lawyer. Given the nature of this
-        platform, legal review is strongly recommended before launch — particularly around
-        Section 3, which determines what payment processors will permit, and jurisdiction-specific
-        rules on platforms of this kind.
-      </p>
     </LegalLayout>
   );
 }

@@ -3,10 +3,13 @@
 import { useEffect, useState } from "react";
 import TopNav from "@/components/TopNav";
 import Footer from "@/components/Footer";
+import PaywallModal from "@/components/PaywallModal";
 
 interface Candidate {
   id: string;
   dateOfBirth: string;
+  isPremium?: boolean;
+  phone?: string | null;
   profile: {
     displayName: string;
     city: string | null;
@@ -28,8 +31,15 @@ export default function DiscoverPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [actioned, setActioned] = useState<Record<string, "passed" | "introduced">>({});
+  const [me, setMe] = useState<any>(null);
+  const [showPaywall, setShowPaywall] = useState(false);
+  const [pendingIntroduceId, setPendingIntroduceId] = useState<string | null>(null);
+  const [introduceError, setIntroduceError] = useState<string | null>(null);
 
   useEffect(() => {
+    fetch("/api/me")
+      .then((res) => res.json())
+      .then((data) => setMe(data));
     fetch("/api/discover")
       .then(async (res) => {
         const data = await res.json();
@@ -41,28 +51,47 @@ export default function DiscoverPage() {
   }, []);
 
   async function introduce(id: string) {
-    setActioned((prev) => ({ ...prev, [id]: "introduced" }));
-    await fetch("/api/matches", {
+    setIntroduceError(null);
+    const res = await fetch("/api/matches", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ recipientId: id }),
-    }).catch(() => {
-      // revert on failure
-      setActioned((prev) => {
-        const copy = { ...prev };
-        delete copy[id];
-        return copy;
-      });
     });
+
+    if (res.status === 402) {
+      // Not paid yet — open the paywall and retry once payment completes.
+      setPendingIntroduceId(id);
+      setShowPaywall(true);
+      return;
+    }
+
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      setIntroduceError(data.error || "Could not send introduction.");
+      return;
+    }
+
+    setActioned((prev) => ({ ...prev, [id]: "introduced" }));
   }
 
   function pass(id: string) {
     setActioned((prev) => ({ ...prev, [id]: "passed" }));
   }
 
+  async function handlePaid() {
+    setShowPaywall(false);
+    // refresh /api/me so canContactFreely reflects the payment
+    const meRes = await fetch("/api/me").then((r) => r.json());
+    setMe(meRes);
+    if (pendingIntroduceId) {
+      await introduce(pendingIntroduceId);
+      setPendingIntroduceId(null);
+    }
+  }
+
   return (
-    <>
-    <main className="w-full px-8 md:px-16">
+    <div className="min-h-screen flex flex-col">
+    <main className="flex-1 w-full px-8 md:px-16">
       <TopNav />
 
       <h1 className="font-display text-2xl mb-6">Discover</h1>
@@ -79,6 +108,12 @@ export default function DiscoverPage() {
 
       {!loading && !error && candidates.length === 0 && (
         <p style={{ color: "#8B93A0" }}>No matches yet — check back soon as more people join.</p>
+      )}
+
+      {introduceError && (
+        <div className="text-sm px-4 py-3 rounded-lg mb-6" style={{ background: "rgba(180,117,107,0.1)", border: "1px solid rgba(180,117,107,0.4)", color: "#B4756B" }}>
+          {introduceError}
+        </div>
       )}
 
       <div className="grid gap-5" style={{ gridTemplateColumns: "repeat(auto-fill, minmax(240px, 1fr))" }}>
@@ -98,11 +133,18 @@ export default function DiscoverPage() {
                     className="absolute inset-0 w-full h-full object-cover"
                   />
                 )}
-                {c.profile?.visibility === "INCOGNITO" && (
-                  <span className="absolute top-3 left-3 text-[10px] uppercase tracking-wide px-2 py-1 rounded-full" style={{ background: "rgba(18,21,26,0.75)", border: "1px solid #2E3640", color: "#8B93A0" }}>
-                    Incognito
-                  </span>
-                )}
+                <div className="absolute top-3 left-3 flex flex-col gap-1.5 items-start">
+                  {c.profile?.visibility === "INCOGNITO" && (
+                    <span className="text-[10px] uppercase tracking-wide px-2 py-1 rounded-full" style={{ background: "rgba(18,21,26,0.75)", border: "1px solid #2E3640", color: "#8B93A0" }}>
+                      Incognito
+                    </span>
+                  )}
+                  {c.isPremium && (
+                    <span className="text-[10px] uppercase tracking-wide px-2 py-1 rounded-full" style={{ background: "rgba(184,147,90,0.85)", color: "#12151A" }}>
+                      Premium
+                    </span>
+                  )}
+                </div>
                 <svg width="26" height="26" viewBox="0 0 40 40" fill="none" className="absolute top-3 right-3">
                   <circle cx="20" cy="20" r="19" stroke="#7C9583" strokeWidth="1.2" />
                   <circle cx="20" cy="20" r="14" stroke="#7C9583" strokeWidth="1" />
@@ -138,11 +180,35 @@ export default function DiscoverPage() {
                   {actioned[c.id] === "introduced" ? "Introduced ✓" : "Introduce"}
                 </button>
               </div>
+              {(me?.role === "ADMIN" || me?.isPremium) && c.phone && (
+                <a
+                  href={`https://wa.me/${c.phone.replace(/\D/g, "")}?text=${encodeURIComponent(
+                    "Hi, I'd like to connect — reaching out from Arrangement."
+                  )}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="block text-center text-xs py-2.5"
+                  style={{ background: "#25D366", color: "#12151A", fontWeight: 600 }}
+                >
+                  Message on WhatsApp
+                </a>
+              )}
             </div>
           ))}
       </div>
+
+      {showPaywall && (
+        <PaywallModal
+          onClose={() => {
+            setShowPaywall(false);
+            setPendingIntroduceId(null);
+          }}
+          onPaid={handlePaid}
+          defaultPhone={me?.phone ?? ""}
+        />
+      )}
     </main>
     <Footer />
-    </>
+    </div>
   );
 }

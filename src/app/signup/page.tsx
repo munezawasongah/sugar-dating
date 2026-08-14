@@ -9,6 +9,7 @@ export default function SignupPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [dob, setDob] = useState("");
+  const [phone, setPhone] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -20,7 +21,7 @@ export default function SignupPage() {
       const res = await fetch("/api/auth/signup", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password, role, dateOfBirth: dob }),
+        body: JSON.stringify({ email, password, role, dateOfBirth: dob, phone }),
       });
       const data = await res.json();
       if (!res.ok) {
@@ -134,6 +135,24 @@ export default function SignupPage() {
               />
               <p className="text-xs mt-1" style={{ color: "#8B93A0" }}>
                 You must be 18 or older to register.
+              </p>
+            </div>
+
+            <div>
+              <label className="text-xs uppercase tracking-wide" style={{ color: "#8B93A0" }}>
+                Phone number
+              </label>
+              <input
+                type="tel"
+                required
+                placeholder="2547XXXXXXXX"
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+                className="w-full mt-1 px-4 py-3 rounded-lg text-sm"
+                style={{ background: "#1B2027", border: "1px solid #2E3640", color: "#EDEAE2" }}
+              />
+              <p className="text-xs mt-1" style={{ color: "#8B93A0" }}>
+                Used for M-Pesa payments and, for premium members, WhatsApp contact.
               </p>
             </div>
 

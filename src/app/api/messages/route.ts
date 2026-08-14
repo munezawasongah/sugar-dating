@@ -40,6 +40,13 @@ export async function POST(req: NextRequest) {
   });
   if (blocked) return NextResponse.json({ error: "Cannot message this user" }, { status: 403 });
 
+  // mediaKey currently holds a base64 data URL directly (MVP approach, same
+  // as profile avatars) until real object storage is wired up. Cap size to
+  // keep the database table lean.
+  if (mediaKey && mediaKey.length * 0.75 > 3 * 1024 * 1024) {
+    return NextResponse.json({ error: "Image is too large — please use one under 3MB." }, { status: 413 });
+  }
+
   const scan = body ? scanMessageForScamPatterns(body) : { flagged: false, reason: null };
 
   const message = await prisma.message.create({

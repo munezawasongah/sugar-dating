@@ -8,6 +8,10 @@ export async function GET(req: NextRequest) {
   const userId = await getSessionUserId(req);
   if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
+  const me = await prisma.user.findUnique({ where: { id: userId } });
+  if (!me) return NextResponse.json({ error: "Not found" }, { status: 404 });
+  const canSeePhone = me.role === "ADMIN" || me.isPremium;
+
   const conversations = await prisma.conversation.findMany({
     where: {
       OR: [{ participantAId: userId }, { participantBId: userId }],
@@ -29,6 +33,7 @@ export async function GET(req: NextRequest) {
         id: other.id,
         displayName: other.profile?.displayName ?? "Member",
         verificationStatus: other.verificationStatus,
+        phone: canSeePhone ? other.phone : null,
       },
       lastMessage: c.messages[0]?.body ?? null,
       lastMessageAt: c.lastMessageAt,

@@ -57,12 +57,6 @@ export default function PrivacyPage() {
           contact details provided on our main website.
         </p>
       </section>
-
-      <p className="text-xs pt-6" style={{ color: "#8B93A0" }}>
-        This is a draft policy intended as a starting point and has not yet been reviewed by a
-        lawyer. It should be reviewed against applicable privacy law (e.g. GDPR, CCPA, or local
-        equivalents depending on your user base) before real users rely on it.
-      </p>
     </LegalLayout>
   );
 }
