@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 
 export default function SignupPage() {
   const router = useRouter();
+  const [step, setStep] = useState<"age" | "blocked" | "role" | "form">("age");
   const [role, setRole] = useState<"SPONSOR" | "PARTNER" | null>(null);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -21,7 +22,7 @@ export default function SignupPage() {
       const res = await fetch("/api/auth/signup", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password, role, dateOfBirth: dob, phone }),
+        body: JSON.stringify({ email, password, role, dateOfBirth: dob, phone, ageConfirmed: true }),
       });
       const data = await res.json();
       if (!res.ok) {
@@ -48,7 +49,49 @@ export default function SignupPage() {
           <span className="font-display text-xl">Arrangement</span>
         </div>
 
-        {!role ? (
+        {step === "age" && (
+          <div className="text-center">
+            <h1 className="font-display text-2xl mb-3">Are you 18 or older?</h1>
+            <p className="text-sm mb-8" style={{ color: "#8B93A0" }}>
+              This platform is for adults only. You'll need to confirm your age before creating an
+              account.
+            </p>
+            <div className="flex flex-col gap-3">
+              <button
+                onClick={() => setStep("role")}
+                className="py-3 rounded-lg text-sm font-semibold"
+                style={{ background: "#B8935A", color: "#12151A" }}
+              >
+                Yes, I am 18 or older
+              </button>
+              <button
+                onClick={() => setStep("blocked")}
+                className="py-3 rounded-lg text-sm"
+                style={{ border: "1px solid #2E3640", color: "#8B93A0" }}
+              >
+                No, I am under 18
+              </button>
+            </div>
+          </div>
+        )}
+
+        {step === "blocked" && (
+          <div className="text-center">
+            <h1 className="font-display text-2xl mb-3">This platform isn't for you — yet.</h1>
+            <p className="text-sm mb-8" style={{ color: "#8B93A0" }}>
+              You must be 18 or older to use Arrangement. Please come back once you turn 18.
+            </p>
+            <a
+              href="https://www.google.com"
+              className="inline-block py-3 px-6 rounded-lg text-sm font-semibold"
+              style={{ background: "#B8935A", color: "#12151A" }}
+            >
+              Exit
+            </a>
+          </div>
+        )}
+
+        {step === "role" && (
           <div>
             <h1 className="font-display text-2xl mb-2 text-center">How would you like to join?</h1>
             <p className="text-sm text-center mb-8" style={{ color: "#8B93A0" }}>
@@ -56,7 +99,10 @@ export default function SignupPage() {
             </p>
             <div className="grid grid-cols-1 gap-4">
               <button
-                onClick={() => setRole("SPONSOR")}
+                onClick={() => {
+                  setRole("SPONSOR");
+                  setStep("form");
+                }}
                 className="text-left p-5 rounded-xl border transition-colors"
                 style={{ borderColor: "#2E3640", background: "#1B2027" }}
               >
@@ -66,7 +112,10 @@ export default function SignupPage() {
                 </div>
               </button>
               <button
-                onClick={() => setRole("PARTNER")}
+                onClick={() => {
+                  setRole("PARTNER");
+                  setStep("form");
+                }}
                 className="text-left p-5 rounded-xl border transition-colors"
                 style={{ borderColor: "#2E3640", background: "#1B2027" }}
               >
@@ -77,11 +126,13 @@ export default function SignupPage() {
               </button>
             </div>
           </div>
-        ) : (
+        )}
+
+        {step === "form" && (
           <form onSubmit={handleSubmit} className="space-y-4">
             <button
               type="button"
-              onClick={() => setRole(null)}
+              onClick={() => setStep("role")}
               className="text-xs mb-2"
               style={{ color: "#8B93A0" }}
             >

@@ -100,8 +100,8 @@ export default function DiscoverPage() {
 
       {error && (
         <div className="text-sm px-4 py-3 rounded-lg mb-6" style={{ background: "rgba(180,117,107,0.1)", border: "1px solid rgba(180,117,107,0.4)", color: "#B4756B" }}>
-          {error === "Complete ID verification to browse profiles."
-            ? "You'll need to complete ID verification before you can browse profiles."
+          {error === "Confirm your age to browse profiles."
+            ? "You'll need to confirm your age before you can browse profiles."
             : error}
         </div>
       )}

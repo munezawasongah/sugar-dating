@@ -1,9 +1,10 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
-const tabs = [
+const baseTabs = [
   { href: "/discover", label: "Discover" },
   { href: "/messages", label: "Messages" },
   { href: "/profile", label: "Profile" },
@@ -11,6 +12,16 @@ const tabs = [
 
 export default function TopNav() {
   const pathname = usePathname();
+  const [isAdmin, setIsAdmin] = useState(false);
+
+  useEffect(() => {
+    fetch("/api/me")
+      .then((res) => res.json())
+      .then((data) => setIsAdmin(data.role === "ADMIN"))
+      .catch(() => {});
+  }, []);
+
+  const tabs = isAdmin ? [...baseTabs, { href: "/admin", label: "Admin" }] : baseTabs;
 
   return (
     <header className="flex items-center justify-between py-6 border-b mb-10" style={{ borderColor: "#2E3640" }}>

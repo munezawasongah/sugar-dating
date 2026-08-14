@@ -12,6 +12,17 @@ export default function ProfilePage() {
   const [country, setCountry] = useState("");
   const [goals, setGoals] = useState("");
   const [visibility, setVisibility] = useState("PUBLIC");
+  const [heightCm, setHeightCm] = useState("");
+  const [weightKg, setWeightKg] = useState("");
+  const [hairColor, setHairColor] = useState("");
+  const [eyeColor, setEyeColor] = useState("");
+  const [drinkingStatus, setDrinkingStatus] = useState("");
+  const [smokingStatus, setSmokingStatus] = useState("");
+  const [occupation, setOccupation] = useState("");
+  const [nationality, setNationality] = useState("");
+  const [ethnicity, setEthnicity] = useState("");
+  const [hobbies, setHobbies] = useState("");
+  const [residentialArea, setResidentialArea] = useState("");
   const [saved, setSaved] = useState(false);
   const [avatarDataUrl, setAvatarDataUrl] = useState<string | null>(null);
   const [avatarError, setAvatarError] = useState<string | null>(null);
@@ -31,6 +42,17 @@ export default function ProfilePage() {
           setGoals((data.profile.relationshipGoals ?? []).join(", "));
           setVisibility(data.profile.visibility ?? "PUBLIC");
           setAvatarDataUrl(data.profile.avatarDataUrl ?? null);
+          setHeightCm(data.profile.heightCm?.toString() ?? "");
+          setWeightKg(data.profile.weightKg?.toString() ?? "");
+          setHairColor(data.profile.hairColor ?? "");
+          setEyeColor(data.profile.eyeColor ?? "");
+          setDrinkingStatus(data.profile.drinkingStatus ?? "");
+          setSmokingStatus(data.profile.smokingStatus ?? "");
+          setOccupation(data.profile.occupation ?? "");
+          setNationality(data.profile.nationality ?? "");
+          setEthnicity(data.profile.ethnicity ?? "");
+          setHobbies((data.profile.hobbies ?? []).join(", "));
+          setResidentialArea(data.profile.residentialArea ?? "");
         }
       });
   }, []);
@@ -94,6 +116,17 @@ export default function ProfilePage() {
         country,
         relationshipGoals: goals.split(",").map((g) => g.trim()).filter(Boolean),
         visibility,
+        heightCm: heightCm || null,
+        weightKg: weightKg || null,
+        hairColor,
+        eyeColor,
+        drinkingStatus,
+        smokingStatus,
+        occupation,
+        nationality,
+        ethnicity,
+        hobbies: hobbies.split(",").map((h) => h.trim()).filter(Boolean),
+        residentialArea,
       }),
     });
     setSaved(true);
@@ -115,7 +148,7 @@ export default function ProfilePage() {
               : { background: "rgba(184,147,90,0.1)", border: "1px solid rgba(184,147,90,0.35)", color: "#B8935A" }
           }
         >
-          {me.verificationStatus === "VERIFIED" ? "✓ ID verified" : `Verification: ${me.verificationStatus?.toLowerCase()}`}
+          {me.verificationStatus === "VERIFIED" ? "✓ Age confirmed (18+)" : `Verification: ${me.verificationStatus?.toLowerCase()}`}
         </div>
       )}
 
@@ -208,6 +241,138 @@ export default function ProfilePage() {
               style={{ background: "#1B2027", border: "1px solid #2E3640", color: "#EDEAE2" }}
             />
           </div>
+        </div>
+
+        <div>
+          <label className="text-xs uppercase tracking-wide" style={{ color: "#8B93A0" }}>
+            Current area of residence
+          </label>
+          <input
+            value={residentialArea}
+            onChange={(e) => setResidentialArea(e.target.value)}
+            placeholder="e.g. Kilimani, Nairobi"
+            className="w-full mt-1 px-4 py-3 rounded-lg text-sm"
+            style={{ background: "#1B2027", border: "1px solid #2E3640", color: "#EDEAE2" }}
+          />
+        </div>
+
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <label className="text-xs uppercase tracking-wide" style={{ color: "#8B93A0" }}>Height (cm)</label>
+            <input
+              type="number"
+              value={heightCm}
+              onChange={(e) => setHeightCm(e.target.value)}
+              className="w-full mt-1 px-4 py-3 rounded-lg text-sm"
+              style={{ background: "#1B2027", border: "1px solid #2E3640", color: "#EDEAE2" }}
+            />
+          </div>
+          <div>
+            <label className="text-xs uppercase tracking-wide" style={{ color: "#8B93A0" }}>Weight (kg)</label>
+            <input
+              type="number"
+              value={weightKg}
+              onChange={(e) => setWeightKg(e.target.value)}
+              className="w-full mt-1 px-4 py-3 rounded-lg text-sm"
+              style={{ background: "#1B2027", border: "1px solid #2E3640", color: "#EDEAE2" }}
+            />
+          </div>
+        </div>
+
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <label className="text-xs uppercase tracking-wide" style={{ color: "#8B93A0" }}>Hair colour</label>
+            <input
+              value={hairColor}
+              onChange={(e) => setHairColor(e.target.value)}
+              className="w-full mt-1 px-4 py-3 rounded-lg text-sm"
+              style={{ background: "#1B2027", border: "1px solid #2E3640", color: "#EDEAE2" }}
+            />
+          </div>
+          <div>
+            <label className="text-xs uppercase tracking-wide" style={{ color: "#8B93A0" }}>Eye colour</label>
+            <input
+              value={eyeColor}
+              onChange={(e) => setEyeColor(e.target.value)}
+              className="w-full mt-1 px-4 py-3 rounded-lg text-sm"
+              style={{ background: "#1B2027", border: "1px solid #2E3640", color: "#EDEAE2" }}
+            />
+          </div>
+        </div>
+
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <label className="text-xs uppercase tracking-wide" style={{ color: "#8B93A0" }}>Drinking</label>
+            <select
+              value={drinkingStatus}
+              onChange={(e) => setDrinkingStatus(e.target.value)}
+              className="w-full mt-1 px-4 py-3 rounded-lg text-sm"
+              style={{ background: "#1B2027", border: "1px solid #2E3640", color: "#EDEAE2" }}
+            >
+              <option value="">Prefer not to say</option>
+              <option value="Never">Never</option>
+              <option value="Socially">Socially</option>
+              <option value="Regularly">Regularly</option>
+            </select>
+          </div>
+          <div>
+            <label className="text-xs uppercase tracking-wide" style={{ color: "#8B93A0" }}>Smoking</label>
+            <select
+              value={smokingStatus}
+              onChange={(e) => setSmokingStatus(e.target.value)}
+              className="w-full mt-1 px-4 py-3 rounded-lg text-sm"
+              style={{ background: "#1B2027", border: "1px solid #2E3640", color: "#EDEAE2" }}
+            >
+              <option value="">Prefer not to say</option>
+              <option value="Never">Never</option>
+              <option value="Occasionally">Occasionally</option>
+              <option value="Regularly">Regularly</option>
+            </select>
+          </div>
+        </div>
+
+        <div>
+          <label className="text-xs uppercase tracking-wide" style={{ color: "#8B93A0" }}>Occupation</label>
+          <input
+            value={occupation}
+            onChange={(e) => setOccupation(e.target.value)}
+            className="w-full mt-1 px-4 py-3 rounded-lg text-sm"
+            style={{ background: "#1B2027", border: "1px solid #2E3640", color: "#EDEAE2" }}
+          />
+        </div>
+
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <label className="text-xs uppercase tracking-wide" style={{ color: "#8B93A0" }}>Nationality</label>
+            <input
+              value={nationality}
+              onChange={(e) => setNationality(e.target.value)}
+              className="w-full mt-1 px-4 py-3 rounded-lg text-sm"
+              style={{ background: "#1B2027", border: "1px solid #2E3640", color: "#EDEAE2" }}
+            />
+          </div>
+          <div>
+            <label className="text-xs uppercase tracking-wide" style={{ color: "#8B93A0" }}>Ethnicity</label>
+            <input
+              value={ethnicity}
+              onChange={(e) => setEthnicity(e.target.value)}
+              className="w-full mt-1 px-4 py-3 rounded-lg text-sm"
+              style={{ background: "#1B2027", border: "1px solid #2E3640", color: "#EDEAE2" }}
+            />
+          </div>
+        </div>
+
+        <div>
+          <label className="text-xs uppercase tracking-wide" style={{ color: "#8B93A0" }}>
+            Hobbies (comma separated)
+          </label>
+          <input
+            value={hobbies}
+            onChange={(e) => setHobbies(e.target.value)}
+            placeholder="Hiking, Cooking, Photography"
+            className="w-full mt-1 px-4 py-3 rounded-lg text-sm"
+            style={{ background: "#1B2027", border: "1px solid #2E3640", color: "#EDEAE2" }}
+          />
         </div>
 
         <div>

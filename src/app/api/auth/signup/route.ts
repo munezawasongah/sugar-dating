@@ -1,13 +1,14 @@
 // POST /api/auth/signup
 // Hard age gate: rejects at the API layer, not just client-side validation.
-// ID verification is a SEPARATE follow-up step (kicked off after signup),
-// but no profile is searchable/visible until verificationStatus === VERIFIED.
+// Age is confirmed two ways: (1) the date of birth provided, checked
+// server-side, and (2) an explicit self-attestation checkbox the member
+// must confirm before an account is created at all. This replaces
+// third-party ID document verification.
 
 import { NextRequest, NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
-import { startVerificationSession } from "@/lib/verification";
 import { signSession } from "@/lib/auth";
 
 const signupSchema = z.object({
@@ -16,6 +17,7 @@ const signupSchema = z.object({
   role: z.enum(["SPONSOR", "PARTNER"]),
   dateOfBirth: z.coerce.date(),
   phone: z.string().min(9), // used for WhatsApp direct-message and M-Pesa payments
+  ageConfirmed: z.literal(true), // must explicitly confirm 18+ before an account can be created
 });
 
 function calculateAge(dob: Date): number {
@@ -65,33 +67,18 @@ export async function POST(req: NextRequest) {
       role,
       dateOfBirth,
       phone,
-      verificationStatus: "UNVERIFIED",
+      // Self-attestation + server-checked date of birth together stand in
+      // for third-party ID verification. Account is immediately "verified"
+      // in the sense the platform requires — trust & safety enforcement
+      // still happens via the report/suspend system for anyone who lied.
+      verificationStatus: "VERIFIED",
+      ageConfirmed: true,
+      ageConfirmedAt: new Date(),
     },
   });
 
-  // Kick off ID verification session with third-party KYC vendor (Persona/Veriff/Onfido).
-  // Profile stays non-discoverable until this resolves to VERIFIED via webhook.
-  // NOTE: if KYC_VENDOR_API_KEY isn't configured yet (e.g. early development),
-  // this is skipped gracefully so the rest of signup/login still works.
-  let verificationSessionUrl: string | null = null;
-  if (process.env.KYC_VENDOR_API_KEY) {
-    try {
-      const verificationSession = await startVerificationSession(user.id);
-      verificationSessionUrl = verificationSession.redirectUrl;
-    } catch (err) {
-      console.error("KYC session creation failed:", err);
-    }
-  }
-
   const token = signSession(user.id);
-  const res = NextResponse.json(
-    {
-      userId: user.id,
-      nextStep: "ID_VERIFICATION",
-      verificationSessionUrl,
-    },
-    { status: 201 }
-  );
+  const res = NextResponse.json({ userId: user.id }, { status: 201 });
   res.cookies.set("session_token", token, {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",

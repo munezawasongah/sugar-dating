@@ -84,6 +84,12 @@ model User {
   verificationVendorRef String?         // reference id from Persona/Veriff/Onfido
   verifiedAt         DateTime?
 
+  // Self-attestation replaces third-party ID verification: the member
+  // explicitly confirms they are 18+ during signup before an account is
+  // created at all.
+  ageConfirmed       Boolean  @default(false)
+  ageConfirmedAt     DateTime?
+
   isActive          Boolean  @default(true)
   isSuspended       Boolean  @default(false)
   suspendedReason   String?
@@ -141,6 +147,14 @@ model Profile {
   ethnicity         String?
   education         String?
   occupation        String?
+  weightKg          Int?
+  hairColor         String?
+  eyeColor          String?
+  drinkingStatus    String?  // e.g. "Never", "Socially", "Regularly"
+  smokingStatus     String?  // e.g. "Never", "Occasionally", "Regularly"
+  nationality       String?
+  hobbies           String[]
+  residentialArea   String?  // neighborhood/area, more specific than city
 
   // Sponsor-specific / Partner-specific optional fields
   netWorthBand      String?  // e.g. "$500k-1M" — self-reported, sponsor-side only, optional

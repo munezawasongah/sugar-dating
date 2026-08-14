@@ -186,7 +186,7 @@ export default function MessagesPage() {
               <div>
                 <div className="font-display text-sm">{activeConvo?.otherUser.displayName}</div>
                 <div className="text-xs" style={{ color: "#7C9583" }}>
-                  {activeConvo?.otherUser.verificationStatus === "VERIFIED" ? "ID verified" : "Verification pending"}
+                  {activeConvo?.otherUser.verificationStatus === "VERIFIED" ? "Age confirmed (18+)" : "Verification pending"}
                 </div>
               </div>
               {canUseWhatsApp && activeConvo?.otherUser.phone && (

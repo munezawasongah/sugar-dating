@@ -21,7 +21,7 @@ export async function GET(req: NextRequest) {
   // reduces unverified accounts scraping/farming profiles. Admins bypass this.
   if (me.role !== "ADMIN" && me.verificationStatus !== "VERIFIED") {
     return NextResponse.json(
-      { error: "Complete ID verification to browse profiles." },
+      { error: "Confirm your age to browse profiles." },
       { status: 403 }
     );
   }
