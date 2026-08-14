@@ -22,11 +22,21 @@ interface FlaggedMessage {
   sender: { email: string };
 }
 
+interface AdminAccount {
+  id: string;
+  email: string;
+  createdAt: string;
+}
+
 export default function AdminPage() {
   const [me, setMe] = useState<any>(null);
   const [checked, setChecked] = useState(false);
   const [reports, setReports] = useState<Report[]>([]);
   const [flagged, setFlagged] = useState<FlaggedMessage[]>([]);
+  const [admins, setAdmins] = useState<AdminAccount[]>([]);
+  const [newAdminEmail, setNewAdminEmail] = useState("");
+  const [adminMessage, setAdminMessage] = useState<{ text: string; error: boolean } | null>(null);
+  const [addingAdmin, setAddingAdmin] = useState(false);
 
   useEffect(() => {
     fetch("/api/me")
@@ -41,6 +51,9 @@ export default function AdminPage() {
     if (me?.role === "ADMIN" || me?.role === "MODERATOR") {
       fetch("/api/admin/reports").then((r) => r.json()).then((d) => setReports(d.reports || []));
       fetch("/api/admin/messages").then((r) => r.json()).then((d) => setFlagged(d.messages || []));
+    }
+    if (me?.role === "ADMIN") {
+      fetch("/api/admin/admins").then((r) => r.json()).then((d) => setAdmins(d.admins || []));
     }
   }, [me]);
 
@@ -60,6 +73,39 @@ export default function AdminPage() {
       body: JSON.stringify({ messageId }),
     });
     setFlagged((prev) => prev.filter((m) => m.id !== messageId));
+  }
+
+  async function addAdmin() {
+    if (!newAdminEmail.trim()) return;
+    setAddingAdmin(true);
+    setAdminMessage(null);
+    try {
+      const res = await fetch("/api/admin/admins", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: newAdminEmail.trim() }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setAdminMessage({ text: data.error || "Could not grant admin access.", error: true });
+        return;
+      }
+      setAdminMessage({ text: `${data.email} now has admin access.`, error: false });
+      setNewAdminEmail("");
+      const refreshed = await fetch("/api/admin/admins").then((r) => r.json());
+      setAdmins(refreshed.admins || []);
+    } finally {
+      setAddingAdmin(false);
+    }
+  }
+
+  async function revokeAdmin(userId: string) {
+    await fetch("/api/admin/admins", {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ userId }),
+    });
+    setAdmins((prev) => prev.filter((a) => a.id !== userId));
   }
 
   if (!checked) return null;
@@ -173,6 +219,73 @@ export default function AdminPage() {
           ))}
         </div>
       </section>
+
+      {me?.role === "ADMIN" && (
+        <section className="mt-12 pt-10" style={{ borderTop: "1px solid #2E3640" }}>
+          <h2 className="text-sm uppercase tracking-wide mb-3" style={{ color: "#8B93A0" }}>
+            Manage admins
+          </h2>
+          <p className="text-sm mb-4" style={{ color: "#c9c5bb" }}>
+            Grant admin access to an existing account by email. They must have signed up already —
+            this doesn't create a new account.
+          </p>
+
+          <div className="flex gap-2 mb-4">
+            <input
+              type="email"
+              value={newAdminEmail}
+              onChange={(e) => setNewAdminEmail(e.target.value)}
+              placeholder="email@example.com"
+              className="flex-1 px-4 py-2.5 rounded-lg text-sm"
+              style={{ background: "#1B2027", border: "1px solid #2E3640", color: "#EDEAE2" }}
+            />
+            <button
+              onClick={addAdmin}
+              disabled={addingAdmin}
+              className="px-5 rounded-lg text-sm font-semibold"
+              style={{ background: "#B8935A", color: "#12151A" }}
+            >
+              {addingAdmin ? "Adding…" : "Grant admin"}
+            </button>
+          </div>
+
+          {adminMessage && (
+            <div
+              className="text-xs px-3 py-2 rounded-lg mb-4"
+              style={{
+                background: adminMessage.error ? "rgba(180,117,107,0.1)" : "rgba(124,149,131,0.1)",
+                border: `1px solid ${adminMessage.error ? "rgba(180,117,107,0.4)" : "rgba(124,149,131,0.35)"}`,
+                color: adminMessage.error ? "#B4756B" : "#7C9583",
+              }}
+            >
+              {adminMessage.text}
+            </div>
+          )}
+
+          <div className="space-y-2">
+            {admins.map((a) => (
+              <div
+                key={a.id}
+                className="flex items-center justify-between px-4 py-3 rounded-lg"
+                style={{ background: "#1B2027", border: "1px solid #2E3640" }}
+              >
+                <span className="text-sm">{a.email}</span>
+                {a.id === me?.id ? (
+                  <span className="text-xs" style={{ color: "#8B93A0" }}>You</span>
+                ) : (
+                  <button
+                    onClick={() => revokeAdmin(a.id)}
+                    className="text-xs px-3 py-1.5 rounded-lg"
+                    style={{ border: "1px solid #2E3640", color: "#B4756B" }}
+                  >
+                    Revoke
+                  </button>
+                )}
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
       </div>
     </main>
     <Footer />
