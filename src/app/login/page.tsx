@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import BackButton from "@/components/BackButton";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -36,6 +37,9 @@ export default function LoginPage() {
   return (
     <main className="min-h-screen flex items-center justify-center px-6 py-16">
       <div className="w-full max-w-md">
+        <div className="mb-6">
+          <BackButton fallbackHref="/" />
+        </div>
         <div className="flex items-center gap-2 mb-10 justify-center">
           <svg width="26" height="26" viewBox="0 0 40 40" fill="none">
             <circle cx="20" cy="20" r="19" stroke="#B8935A" strokeWidth="1.2" />
